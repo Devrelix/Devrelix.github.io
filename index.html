@@ -1,0 +1,1689 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GPTPrint Pro — Export ChatGPT Conversations to PDF</title>
+  <meta name="description" content="The most powerful ChatGPT to PDF export tool. Customize themes, watermarks, headers and more. Free Chrome Extension by Devrelix."/>
+  <meta name="google-site-verification" content="Qn0pc1PeKvFPFvwdQ9zmX9VL6b3A6D7wgVGSs5z4zwI" />
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    /* ═══════════════════════════════════════
+       THEME TOKENS
+    ═══════════════════════════════════════ */
+    :root {
+      --purple:       #a78bfa;
+      --blue:         #60a5fa;
+      --cyan:         #22d3ee;
+      --green:        #10b981;
+      --gradient-brand: linear-gradient(135deg, #a78bfa 0%, #60a5fa 60%, #22d3ee 100%);
+      --gradient-hero:  linear-gradient(135deg, #a78bfa 0%, #818cf8 50%, #60a5fa 100%);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 20px;
+      --radius-xl: 28px;
+    }
+
+    /* ── DARK ── */
+    [data-theme="dark"] {
+      --bg-page:       #060810;
+      --bg-base:       #0d0f1a;
+      --bg-elevated:   #111320;
+      --bg-card:       #161829;
+      --bg-card-hover: #1a1d30;
+      --bg-input:      #1e2238;
+      --border:        rgba(255,255,255,0.07);
+      --border-bright: rgba(255,255,255,0.12);
+      --border-accent: rgba(167,139,250,0.25);
+      --text-primary:  #f0f2ff;
+      --text-secondary:#8b92b8;
+      --text-muted:    #4a5080;
+      --nav-bg:        rgba(6,8,16,0.85);
+      --grid-line:     rgba(255,255,255,0.025);
+      --glow-1:        rgba(167,139,250,0.12);
+      --glow-2:        rgba(34,211,238,0.08);
+      --shadow-card:   0 20px 60px rgba(0,0,0,0.5);
+      --strip-bg:      rgba(255,255,255,0.015);
+      --footer-bg:     #060810;
+      --badge-bg:      rgba(167,139,250,0.08);
+      --badge-border:  rgba(167,139,250,0.3);
+      --badge-color:   #a78bfa;
+    }
+
+    /* ── LIGHT ── */
+    [data-theme="light"] {
+      --bg-page:       #f5f6ff;
+      --bg-base:       #ffffff;
+      --bg-elevated:   #f8f9ff;
+      --bg-card:       #ffffff;
+      --bg-card-hover: #f0f2ff;
+      --bg-input:      #f3f4ff;
+      --border:        rgba(0,0,0,0.07);
+      --border-bright: rgba(0,0,0,0.12);
+      --border-accent: rgba(102,126,234,0.3);
+      --text-primary:  #0f1225;
+      --text-secondary:#4a5280;
+      --text-muted:    #9099c0;
+      --nav-bg:        rgba(245,246,255,0.9);
+      --grid-line:     rgba(0,0,0,0.04);
+      --glow-1:        rgba(167,139,250,0.1);
+      --glow-2:        rgba(34,211,238,0.06);
+      --shadow-card:   0 8px 40px rgba(102,126,234,0.12);
+      --strip-bg:      rgba(0,0,0,0.02);
+      --footer-bg:     #060d41;
+      --badge-bg:      rgba(102,126,234,0.08);
+      --badge-border:  rgba(102,126,234,0.25);
+      --badge-color:   #5568d3;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg-page);
+      color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      transition: background 0.35s ease, color 0.35s ease;
+    }
+
+    /* grid bg */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--grid-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+      transition: background-image 0.35s;
+    }
+
+    /* ═══════════════════════════════════════
+       NAV
+    ═══════════════════════════════════════ */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 0 40px;
+      height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--nav-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      transition: height 0.3s, background 0.35s, border-color 0.35s;
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .nav-logo img.ext-icon {
+      height: 30px;
+      width: 30px;
+      border-radius: 8px;
+    }
+
+    .nav-logo-text {
+      font-family: 'Syne', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      background: var(--gradient-brand);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--text-primary); }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* Theme toggle */
+    .theme-toggle {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      border: 1px solid var(--border-bright);
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: all 0.2s;
+    }
+
+    .theme-toggle:hover {
+      border-color: var(--border-accent);
+      color: var(--purple);
+      background: var(--badge-bg);
+    }
+
+    .icon-sun, .icon-moon { transition: opacity 0.2s, transform 0.3s; }
+    [data-theme="dark"]  .icon-sun  { display: block; }
+    [data-theme="dark"]  .icon-moon { display: none; }
+    [data-theme="light"] .icon-sun  { display: none; }
+    [data-theme="light"] .icon-moon { display: block; }
+
+    .nav-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 20px;
+      background: var(--gradient-hero);
+      border: none;
+      border-radius: 10px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: white;
+      text-decoration: none;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 0 20px rgba(167,139,250,0.25);
+    }
+
+    .nav-cta:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 28px rgba(167,139,250,0.4);
+    }
+
+    /* ═══════════════════════════════════════
+       HERO
+    ═══════════════════════════════════════ */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      padding: 140px 40px 100px;
+      overflow: hidden;
+    }
+
+    .hero-glow {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .hero-glow-1 {
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, var(--glow-1) 0%, transparent 70%);
+      top: 5%; left: -120px;
+      animation: pg 7s ease-in-out infinite;
+    }
+
+    .hero-glow-2 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, var(--glow-2) 0%, transparent 70%);
+      bottom: 5%; right: -80px;
+      animation: pg 9s ease-in-out infinite reverse;
+    }
+
+    @keyframes pg {
+      0%,100% { transform: scale(1); opacity:1; }
+      50%      { transform: scale(1.1); opacity:0.6; }
+    }
+
+    .hero-inner {
+      position: relative;
+      z-index: 1;
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border: 1px solid var(--badge-border);
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--badge-color);
+      background: var(--badge-bg);
+      margin-bottom: 24px;
+      letter-spacing: 0.03em;
+    }
+
+    .badge-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--badge-color);
+      animation: blink 2s ease-in-out infinite;
+    }
+
+    @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+
+    h1.hero-title {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(36px, 4.5vw, 56px);
+      font-weight: 800;
+      line-height: 1.08;
+      letter-spacing: -0.03em;
+      margin-bottom: 22px;
+      color: var(--text-primary);
+    }
+
+    .hero-title-grad {
+      background: var(--gradient-brand);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-sub {
+      font-size: 17px;
+      line-height: 1.7;
+      color: var(--text-secondary);
+      max-width: 460px;
+      margin-bottom: 40px;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 28px;
+      background: var(--gradient-hero);
+      border: none;
+      border-radius: var(--radius-md);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      color: white;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.25s;
+      box-shadow: 0 0 30px rgba(167,139,250,0.3), 0 4px 16px rgba(0,0,0,0.2);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 40px rgba(167,139,250,0.45), 0 8px 24px rgba(0,0,0,0.25);
+    }
+
+    .btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 22px;
+      background: transparent;
+      border: 1px solid var(--border-bright);
+      border-radius: var(--radius-md);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.25s;
+    }
+
+    .btn-ghost:hover {
+      border-color: var(--border-accent);
+      color: var(--text-primary);
+      background: var(--badge-bg);
+    }
+
+    .hero-trust {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 24px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .stars { color: #fbbf24; letter-spacing: 1px; }
+
+    /* ── Extension mockup ── */
+    .hero-visual {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mockup-wrap {
+      position: relative;
+    }
+
+    .mockup-glow {
+      position: absolute;
+      inset: -50px;
+      background: radial-gradient(ellipse at center, rgba(167,139,250,0.16) 0%, transparent 65%);
+      pointer-events: none;
+    }
+
+    .ext-mockup {
+      position: relative;
+      width: 320px;
+      background: var(--bg-base);
+      border-radius: 17px;
+      border: 1px solid var(--border-accent);
+      box-shadow: var(--shadow-card), 0 0 50px rgba(167,139,250,0.1);
+      overflow: hidden;
+      animation: float 6s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%,100% { transform: translateY(0) rotate(0.4deg); }
+      50%      { transform: translateY(-10px) rotate(-0.4deg); }
+    }
+
+    .ext-mockup img {
+      width: 100%;
+      display: block;
+      border-radius: 14px;
+    }
+
+    .m-badge {
+      position: absolute;
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+      font-family: 'Syne', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: 100px;
+      box-shadow: 0 4px 20px rgba(16,185,129,0.4);
+      white-space: nowrap;
+    }
+
+    .m-badge-top  { top: -30px; right: -10px; animation: fb 4s ease-in-out infinite; }
+    .m-badge-bot  { bottom: 10px; left: -30px; background: var(--bg-card); border: 1px solid var(--border-accent); color: var(--text-primary); box-shadow: 0 8px 24px rgba(0,0,0,0.3); font-size: 11px; font-weight: 500; animation: fb 5s ease-in-out infinite reverse; }
+    .m-badge-bot span { color: var(--purple); font-weight: 700; }
+
+    @keyframes fb { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-6px);} }
+
+    /* ═══════════════════════════════════════
+       STATS
+    ═══════════════════════════════════════ */
+    .stats-strip {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: var(--strip-bg);
+      padding: 0 40px;
+    }
+
+    .stats-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .stat-item {
+      padding: 32px 20px;
+      text-align: center;
+      border-right: 1px solid var(--border);
+      transition: background 0.2s;
+    }
+
+    .stat-item:last-child { border-right: none; }
+    .stat-item:hover { background: var(--badge-bg); }
+
+    .stat-number {
+      font-family: 'Syne', sans-serif;
+      font-size: 34px;
+      font-weight: 800;
+      background: var(--gradient-brand);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1;
+      margin-bottom: 6px;
+      letter-spacing: -0.03em;
+    }
+
+    .stat-label { font-size: 13px; color: var(--text-muted); }
+
+    /* ═══════════════════════════════════════
+       SHARED SECTION
+    ═══════════════════════════════════════ */
+    section {
+      position: relative;
+      z-index: 1;
+      padding: 96px 40px;
+    }
+
+    .section-inner { max-width: 1200px; margin: 0 auto; }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--cyan);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    .eyebrow::before { content:''; width:18px; height:1px; background:var(--cyan); }
+
+    h2.sec-title {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(26px, 3.5vw, 42px);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      margin-bottom: 14px;
+      color: var(--text-primary);
+    }
+
+    h2.sec-title em {
+      font-style: normal;
+      background: var(--gradient-brand);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .sec-sub {
+      font-size: 16px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      max-width: 500px;
+    }
+
+    /* ═══════════════════════════════════════
+       FEATURES
+    ═══════════════════════════════════════ */
+    #features { background: var(--bg-elevated); }
+
+    .features-head { text-align: center; margin-bottom: 60px; }
+    .features-head .sec-sub { margin: 0 auto; }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .feat-card {
+      background: var(--bg-card);
+      padding: 34px 28px;
+      transition: background 0.25s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 2px;
+      background: var(--gradient-brand);
+      opacity: 0;
+      transition: opacity 0.25s;
+    }
+
+    .feat-card:hover { background: var(--bg-card-hover); }
+    .feat-card:hover::before { opacity: 1; }
+
+    .feat-icon {
+      width: 46px; height: 46px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 18px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-bright);
+      transition: all 0.25s;
+    }
+
+    .feat-card:hover .feat-icon {
+      border-color: var(--border-accent);
+      background: var(--badge-bg);
+    }
+
+    .feat-icon svg { width: 21px; height: 21px; }
+
+    .feat-name {
+      font-family: 'Syne', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+      letter-spacing: -0.01em;
+    }
+
+    .feat-desc {
+      font-size: 13.5px;
+      line-height: 1.65;
+      color: var(--text-secondary);
+    }
+
+    /* ═══════════════════════════════════════
+       SCREENSHOTS
+    ═══════════════════════════════════════ */
+    #screenshots { background: var(--bg-base); }
+
+    .screens-head { margin-bottom: 52px; }
+
+    /* tab selector */
+    .screen-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 32px;
+      flex-wrap: wrap;
+    }
+
+    .stab {
+      padding: 8px 18px;
+      border-radius: 100px;
+      border: 1px solid var(--border-bright);
+      background: transparent;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .stab.active, .stab:hover {
+      border-color: var(--border-accent);
+      color: var(--purple);
+      background: var(--badge-bg);
+    }
+
+    .screens-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .screen-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+
+    .screen-card:hover {
+      border-color: var(--border-accent);
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-card);
+    }
+
+    .screen-card img {
+      width: 100%;
+      display: block;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .screen-card-info {
+      padding: 14px 18px;
+    }
+
+    .screen-card-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 3px;
+    }
+
+    .screen-card-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* large featured screenshot */
+    .screen-featured {
+      grid-column: span 2;
+    }
+
+    /* ═══════════════════════════════════════
+       HOW IT WORKS
+    ═══════════════════════════════════════ */
+    #how-it-works { background: var(--bg-elevated); }
+
+    .how-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+
+    .steps { display: flex; flex-direction: column; gap: 0; }
+
+    .step {
+      display: flex;
+      gap: 22px;
+      padding: 26px 0;
+      border-bottom: 1px solid var(--border);
+      transition: all 0.25s;
+    }
+
+    .step:last-child { border-bottom: none; }
+
+    .step-num {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      border: 1px solid var(--border-bright);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text-muted);
+      flex-shrink: 0;
+      transition: all 0.25s;
+    }
+
+    .step:hover .step-num {
+      background: var(--gradient-hero);
+      border-color: transparent;
+      color: white;
+    }
+
+    .step-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 5px;
+    }
+
+    .step-desc { font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; }
+
+    /* .how-img {
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      border: 1px solid var(--border-accent);
+      box-shadow: var(--shadow-card);
+      transition: box-shadow 0.3s;
+    } */
+
+    .how-img img { width: 80%; display: block; border-radius: 25px;}
+
+    /* ═══════════════════════════════════════
+       STORE DETAILS
+    ═══════════════════════════════════════ */
+    #store { background: var(--bg-base); }
+
+    .store-layout {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 48px;
+      align-items: start;
+    }
+
+    .store-main {}
+
+    .store-hero-row {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 28px;
+      padding-bottom: 28px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .store-icon {
+      width: 72px; height: 72px;
+      border-radius: 18px;
+      overflow: hidden;
+      flex-shrink: 0;
+      border: 1px solid var(--border-bright);
+    }
+
+    .store-icon img { width: 100%; height: 100%; object-fit: cover; }
+
+    .store-title-block {}
+
+    .store-name {
+      font-family: 'Syne', sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+
+    .store-by {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .store-by a { color: var(--purple); text-decoration: none; }
+
+    .store-rating {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 6px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .store-rating .stars { font-size: 15px; }
+
+    .store-desc {
+      font-size: 14.5px;
+      line-height: 1.75;
+      color: var(--text-secondary);
+      margin-bottom: 28px;
+    }
+
+    .store-sections { display: flex; flex-direction: column; gap: 24px; }
+
+    .store-section-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .store-ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .store-ul li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 13.5px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .store-ul li::before {
+      content: '→';
+      color: var(--purple);
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* sidebar card */
+    .store-sidebar {}
+
+    .store-meta-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      position: sticky;
+      top: 84px;
+    }
+
+    .meta-card-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      background: var(--gradient-hero);
+    }
+
+    .meta-card-header-text {
+      font-family: 'Syne', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 4px;
+    }
+
+    .meta-card-sub { font-size: 12px; color: rgba(255,255,255,0.7); }
+
+    .meta-install-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: calc(100% - 32px);
+      margin: 16px;
+      padding: 13px;
+      background: var(--gradient-hero);
+      border: none;
+      border-radius: var(--radius-sm);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: white;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 16px rgba(167,139,250,0.3);
+    }
+
+    .meta-install-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 24px rgba(167,139,250,0.45);
+    }
+
+    .meta-rows {
+      padding: 0 20px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+
+    .meta-row:last-child { border-bottom: none; }
+
+    .meta-key { color: var(--text-muted); font-weight: 500; }
+
+    .meta-val {
+      color: var(--text-primary);
+      font-weight: 600;
+      text-align: right;
+    }
+
+    .meta-privacy {
+      margin: 0 20px 20px;
+      padding: 14px;
+      background: rgba(16,185,129,0.06);
+      border: 1px solid rgba(16,185,129,0.2);
+      border-radius: var(--radius-sm);
+    }
+
+    .meta-privacy-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--green);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .meta-privacy-items {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .meta-privacy-item {
+      font-size: 11.5px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      line-height: 1.4;
+    }
+
+    .meta-privacy-item::before { content:'✓'; color:var(--green); font-weight:700; flex-shrink:0; }
+
+    /* ═══════════════════════════════════════
+       CTA
+    ═══════════════════════════════════════ */
+    #cta { padding: 72px 40px; background: var(--bg-elevated); }
+
+    .cta-box {
+      max-width: 780px;
+      margin: 0 auto;
+      text-align: center;
+      background: linear-gradient(135deg, rgba(167,139,250,0.05) 0%, rgba(96,165,250,0.05) 100%);
+      border: 1px solid var(--border-accent);
+      border-radius: var(--radius-xl);
+      padding: 68px 40px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-box::before {
+      content: '';
+      position: absolute;
+      top: -80px; left: 50%;
+      transform: translateX(-50%);
+      width: 360px; height: 180px;
+      background: radial-gradient(ellipse, rgba(167,139,250,0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .cta-box h2 { font-size: clamp(24px, 3vw, 38px); margin-bottom: 14px; }
+    .cta-box .sec-sub { margin: 0 auto 36px; max-width: 440px; }
+
+    .cta-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .cta-note {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 18px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* ═══════════════════════════════════════
+       FOOTER
+    ═══════════════════════════════════════ */
+    footer {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      background: var(--footer-bg);
+      padding: 60px 40px 28px;
+    }
+
+    .footer-inner { max-width: 1200px; margin: 0 auto; }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 44px;
+      margin-bottom: 48px;
+    }
+
+    .footer-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      margin-bottom: 14px;
+    }
+
+    .footer-logo img { height: 60px; width: auto; }
+
+    .footer-logo-text {
+      font-family: 'Syne', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      background: var(--gradient-brand);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .footer-tagline {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.70);
+      line-height: 1.6;
+      margin-bottom: 22px;
+      max-width: 240px;
+    }
+
+    .footer-socials { display: flex; gap: 10px; }
+
+    .soc-btn {
+      width: 34px; height: 34px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
+      display: flex; align-items: center; justify-content: center;
+      color: rgba(255, 255, 255, 0.80);
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .soc-btn:hover {
+      border-color:var(--purple);
+      color: rgb(255, 255, 255);
+      background: rgba(108, 167, 255);
+    }
+
+    .footer-col-head {
+      font-family: 'Syne', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.80);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+
+    .footer-links { list-style: none; display: flex; flex-direction: column; gap: 11px; }
+
+    .footer-links a {
+      font-size: 13px;
+      color: rgba(255,255,255,0.60);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover { color: rgb(108, 167, 255); }
+
+    .footer-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 5px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .footer-copy { font-size: 12px; color: rgba(255,255,255,0.25); }
+    .footer-copy a { color: var(--purple); text-decoration: none; }
+
+    .footer-btm-links { display: flex; gap: 20px; }
+
+    .footer-btm-links a {
+      font-size: 12px;
+      color: rgba(255,255,255,0.25);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-btm-links a:hover { color: rgba(255,255,255,0.5); }
+
+    /* ═══════════════════════════════════════
+       SCROLL REVEAL
+    ═══════════════════════════════════════ */
+    .reveal {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.65s ease, transform 0.65s ease;
+    }
+
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .rd1 { transition-delay: 0.1s; }
+    .rd2 { transition-delay: 0.2s; }
+    .rd3 { transition-delay: 0.3s; }
+    .rd4 { transition-delay: 0.4s; }
+    .rd5 { transition-delay: 0.5s; }
+
+    /* ═══════════════════════════════════════
+       RESPONSIVE
+    ═══════════════════════════════════════ */
+    @media (max-width: 1024px) {
+      .hero-inner  { grid-template-columns: 1fr; gap: 56px; }
+      .hero-visual { order: -1; }
+      .how-layout  { grid-template-columns: 1fr; }
+      .store-layout{ grid-template-columns: 1fr; }
+      .store-meta-card { position: static; }
+      .footer-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 768px) {
+      nav { padding: 0 20px; }
+      .nav-links { display: none; }
+      section, .hero, footer { padding-left: 20px; padding-right: 20px; }
+      .stats-inner { grid-template-columns: 1fr 1fr; }
+      .features-grid { grid-template-columns: 1fr; }
+      .screens-grid { grid-template-columns: 1fr; }
+      .screen-featured { grid-column: span 1; }
+      .footer-grid { grid-template-columns: 1fr; }
+      .footer-bottom { flex-direction: column; gap: 12px; text-align: center; }
+      #cta { padding: 40px 20px; }
+      .cta-box { padding: 44px 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════ NAV ═══════════════════════ -->
+<nav id="navbar">
+  <a href="#" class="nav-logo">
+    <img src="./assets/logo128.png" alt="GPTPrint Pro" class="ext-icon"/>
+    <span class="nav-logo-text">GPTPrint Pro</span>
+  </a>
+
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#how-it-works">How It Works</a></li>
+    <li><a href="#store">Store Details</a></li>
+    <li><a href="#contact">Contact Us</a></li>
+  </ul>
+
+  <div class="nav-right">
+    <button class="theme-toggle" id="themeToggle" title="Toggle theme" aria-label="Toggle theme">
+      <!-- sun (shown in dark mode) -->
+      <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="5"/>
+        <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+        <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+      </svg>
+      <!-- moon (shown in light mode) -->
+      <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+      </svg>
+    </button>
+    <a href="https://chromewebstore.google.com/detail/gptprint-pro-%E2%80%93-print-expo/epjlopeengigkpnddojdekfgpfpbidol" target="_blank" class="nav-cta">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/>
+        <line x1="21.17" y1="8" x2="12" y2="8"/><line x1="3.95" y1="6.06" x2="8.54" y2="14"/>
+        <line x1="10.88" y1="21.94" x2="15.46" y2="14"/>
+      </svg>
+      Add to Chrome — Free
+    </a>
+  </div>
+</nav>
+
+<!-- ═══════════════════════ HERO ═══════════════════════ -->
+<div class="hero">
+  <div class="hero-glow hero-glow-1"></div>
+  <div class="hero-glow hero-glow-2"></div>
+
+  <div class="hero-inner">
+    <div>
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        Now Live · Chrome Web Store · Version 1.0.1
+      </div>
+      <h1 class="hero-title">
+        Export ChatGPT<br/>
+        <span class="hero-title-grad">to Perfect PDF.</span>
+      </h1>
+      <p class="hero-sub">
+        The most powerful ChatGPT print customization tool. Dark &amp; light themes, custom headers, watermarks, message styling — all from one elegant Chrome extension.
+      </p>
+      <div class="hero-actions">
+        <a href="https://chromewebstore.google.com/detail/gptprint-pro-%E2%80%93-print-expo/epjlopeengigkpnddojdekfgpfpbidol" target="_blank" class="btn-primary">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/>
+            <line x1="21.17" y1="8" x2="12" y2="8"/><line x1="3.95" y1="6.06" x2="8.54" y2="14"/>
+            <line x1="10.88" y1="21.94" x2="15.46" y2="14"/>
+          </svg>
+          Add to Chrome — It's Free
+        </a>
+        
+      </div>
+      <div class="hero-trust">
+        <span class="stars">★★★★★</span>
+        <span>Free · No account required · 100% local · Privacy first</span>
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      <div class="mockup-wrap">
+        <div class="mockup-glow"></div>
+        <div class="m-badge m-badge-top">✓ Live on Chrome Store</div>
+        <div class="ext-mockup">
+          <img src="./assets/basic.jpg" alt="GPTPrint Pro extension — Basic tab"/>
+        </div>
+        <div class="m-badge m-badge-bot">📄 PDF exported — <span>Just now</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ STATS ═══════════════════════ -->
+<div class="stats-strip">
+  <div class="stats-inner">
+    <div class="stat-item reveal">
+      <div class="stat-number">100%</div>
+      <div class="stat-label">Free, always</div>
+    </div>
+    <div class="stat-item reveal rd1">
+      <div class="stat-number">4</div>
+      <div class="stat-label">UI panels</div>
+    </div>
+    <div class="stat-item reveal rd2">
+      <div class="stat-number">2</div>
+      <div class="stat-label">PDF themes</div>
+    </div>
+    <div class="stat-item reveal rd3">
+      <div class="stat-number">0</div>
+      <div class="stat-label">Data collected</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ FEATURES ═══════════════════════ -->
+<section id="features">
+  <div class="section-inner">
+    <div class="features-head">
+      <div class="eyebrow reveal">Capabilities</div>
+      <h2 class="sec-title reveal rd1">Everything you need<br/><em>to print perfectly.</em></h2>
+      <p class="sec-sub reveal rd2">Full control over how your ChatGPT conversations look on paper — or as a PDF you're proud to share.</p>
+    </div>
+
+    <div class="features-grid">
+      <div class="feat-card reveal">
+        <div class="feat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.8" stroke-linecap="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+        </div>
+        <div class="feat-name">Structured PDF Export</div>
+        <div class="feat-desc">Export any ChatGPT conversation into a clean, well-formatted PDF — ready to share, present, or archive in seconds.</div>
+      </div>
+
+      <div class="feat-card reveal rd1">
+        <div class="feat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="1.8" stroke-linecap="round">
+        <circle cx="12" cy="12" r="5"/>
+        <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+        <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>
+        </div>
+        <div class="feat-name">Dark &amp; Light Themes</div>
+        <div class="feat-desc">Choose between a crisp light mode for documents or a sleek dark mode for presentations. A4-optimised both ways.</div>
+      </div>
+
+      <div class="feat-card reveal rd2">
+        <div class="feat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.8" stroke-linecap="round">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <path d="M9 9h6M9 12h6M9 15h4"/>
+          </svg>
+        </div>
+        <div class="feat-name">Custom Header</div>
+        <div class="feat-desc">Add a branded header with custom title, subtitle, colour, alignment, and font sizes. Perfect for professional exports.</div>
+      </div>
+
+      <div class="feat-card reveal rd1">
+        <div class="feat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.8" stroke-linecap="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <div class="feat-name">Watermark Control</div>
+        <div class="feat-desc">Add custom watermarks with full control over text, position, rotation, opacity and size to brand every export.</div>
+      </div>
+
+      <div class="feat-card reveal rd2">
+        <div class="feat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="1.8" stroke-linecap="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+          </svg>
+        </div>
+        <div class="feat-name">Message Styling</div>
+        <div class="feat-desc">Individually style user and AI messages — custom colours, alignment, and border radius for each role.</div>
+      </div>
+
+      <div class="feat-card reveal rd3">
+        <div class="feat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.8" stroke-linecap="round">
+            <polyline points="6 9 6 2 18 2 18 9"/>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+            <rect x="6" y="14" width="12" height="8"/>
+          </svg>
+        </div>
+        <div class="feat-name">Live Preview</div>
+        <div class="feat-desc">Real-time preview panel updates instantly as you change every setting — see exactly what you'll get before printing.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════ HOW IT WORKS ═══════════════════════ -->
+<section id="how-it-works">
+  <div class="section-inner">
+    <div class="how-layout">
+      <div>
+        <div class="eyebrow reveal">Simple by design</div>
+        <h2 class="sec-title reveal rd1">Three steps.<br/><em>Perfect PDF.</em></h2>
+
+        <div class="steps">
+          <div class="step reveal rd1">
+            <div class="step-num">01</div>
+            <div>
+              <div class="step-title">Install from Chrome Web Store</div>
+              <div class="step-desc">One click. No account, no sign-up, no permissions you didn't ask for. Free and instant.</div>
+            </div>
+          </div>
+          <div class="step reveal rd2">
+            <div class="step-num">02</div>
+            <div>
+              <div class="step-title">Open any ChatGPT conversation</div>
+              <div class="step-desc">Go to ChatGPT, open a conversation, and click the GPTPrint Pro icon in your Chrome toolbar.</div>
+            </div>
+          </div>
+          <div class="step reveal rd3">
+            <div class="step-num">03</div>
+            <div>
+              <div class="step-title">Customise and export</div>
+              <div class="step-desc">Set your theme, style messages, add a header or watermark — hit Print. Done in seconds.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="how-img reveal rd2">
+        <img src="./assets/preview_gpt_print_pro.png" alt="GPTPrint Pro preview panel showing a live ChatGPT PDF preview"/>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ STORE DETAILS ═══════════════════════ -->
+<section id="store">
+  <div class="section-inner">
+    <div class="eyebrow reveal">Chrome Web Store</div>
+    <h2 class="sec-title reveal rd1">Official listing <em>details.</em></h2>
+    <p class="sec-sub reveal rd2" style="margin-bottom:48px;">Everything you need to know — directly from the published extension listing.</p>
+
+    <div class="store-layout reveal">
+      <div class="store-main">
+        <div class="store-hero-row">
+          <div class="store-icon">
+            <img src="./assets/logo128.png" alt="GPTPrint Pro icon"/>
+          </div>
+          <div class="store-title-block">
+            <div class="store-name">GPTPrint Pro</div>
+            <div class="store-by">by <a href="https://www.linkedin.com/company/devrelix" target="_blank">Devrelix Tech</a> · Workflow &amp; Planning</div>
+            <div class="store-rating">
+              <span class="stars">★★★★★</span>
+              <span>New release · Version 1.0.1 · Updated Feb 26, 2026</span>
+            </div>
+          </div>
+        </div>
+
+        <p class="store-desc">
+          GPTPrint Pro lets you print ChatGPT conversations, export ChatGPT to PDF, and fully customise how your AI chats look when saved or shared. Whether you're a student, developer, teacher, researcher, or professional — this extension gives you complete control over your ChatGPT print layout.
+        </p>
+
+        <div class="store-sections">
+          <div>
+            <div class="store-section-title">🎨 Theme Control</div>
+            <ul class="store-ul">
+              <li>Light &amp; Dark print mode</li>
+              <li>Clean background formatting</li>
+              <li>A4 optimised layout</li>
+              <li>Professional PDF-ready design</li>
+            </ul>
+          </div>
+
+          <div>
+            <div class="store-section-title">🧑‍💻 Message Customization</div>
+            <ul class="store-ul">
+              <li>Customise user &amp; assistant message colours</li>
+              <li>Control alignment — left, center, or right</li>
+              <li>Rounded corner radius styling</li>
+              <li>Hide user or assistant messages selectively</li>
+            </ul>
+          </div>
+
+          <div>
+            <div class="store-section-title">📄 Professional Header</div>
+            <ul class="store-ul">
+              <li>Add custom title and subtitle</li>
+              <li>Adjustable alignment &amp; font size</li>
+              <li>Perfect for branded PDF exports</li>
+            </ul>
+          </div>
+
+          <div>
+            <div class="store-section-title">💧 Watermark Support</div>
+            <ul class="store-ul">
+              <li>Custom watermark text</li>
+              <li>Adjustable opacity and multiple positions</li>
+              <li>Rotation control — ideal for branding &amp; documentation</li>
+            </ul>
+          </div>
+
+          <div>
+            <div class="store-section-title">📊 Advanced Layout Options</div>
+            <ul class="store-ul">
+              <li>Page orientation — Portrait or Landscape</li>
+              <li>Custom top and bottom margins</li>
+              <li>Font family and custom font size selection</li>
+              <li>Include conversation metadata</li>
+            </ul>
+          </div>
+
+          <div>
+            <div class="store-section-title">🎯 Perfect For</div>
+            <ul class="store-ul">
+              <li>Students printing study notes from ChatGPT</li>
+              <li>Developers documenting AI-generated solutions</li>
+              <li>Teachers sharing AI explanations with students</li>
+              <li>Researchers exporting and archiving conversations</li>
+              <li>Professionals creating client-ready PDF reports</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="store-sidebar">
+        <div class="store-meta-card">
+          <div class="meta-card-header">
+            <div class="meta-card-header-text">GPTPrint Pro</div>
+            <div class="meta-card-sub">Free Chrome Extension by Devrelix</div>
+          </div>
+
+          <a href="https://chromewebstore.google.com/detail/gptprint-pro-%E2%80%93-print-expo/epjlopeengigkpnddojdekfgpfpbidol" target="_blank" class="meta-install-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/>
+              <line x1="21.17" y1="8" x2="12" y2="8"/><line x1="3.95" y1="6.06" x2="8.54" y2="14"/>
+              <line x1="10.88" y1="21.94" x2="15.46" y2="14"/>
+            </svg>
+            Add to Chrome — Free
+          </a>
+
+          <div class="meta-rows">
+            <div class="meta-row">
+              <span class="meta-key">Version</span>
+              <span class="meta-val">1.0.1</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-key">Updated</span>
+              <span class="meta-val">Feb 26, 2026</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-key">Offered by</span>
+              <span class="meta-val">Devrelix Tech</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-key">Size</span>
+              <span class="meta-val">56.81 KiB</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-key">Language</span>
+              <span class="meta-val">English</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-key">Category</span>
+              <span class="meta-val">Workflow &amp; Planning</span>
+            </div>
+          </div>
+
+          <div class="meta-privacy">
+            <div class="meta-privacy-title">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              Privacy — 100% Local
+            </div>
+            <div class="meta-privacy-items">
+              <div class="meta-privacy-item">Not being sold to third parties</div>
+              <div class="meta-privacy-item">Not used for unrelated purposes</div>
+              <div class="meta-privacy-item">Works entirely in your browser</div>
+              <div class="meta-privacy-item">Your conversations never leave your device</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ CTA ═══════════════════════ -->
+<section id="cta">
+  <div class="cta-box reveal">
+    <div class="eyebrow" style="justify-content:center;">Free Chrome Extension</div>
+    <h2 class="sec-title">Start printing<br/><em>better conversations.</em></h2>
+    <p class="sec-sub">Install GPTPrint Pro in one click. No account, no credit card, no catch.</p>
+    <div class="cta-actions">
+      <a href="https://chromewebstore.google.com/detail/gptprint-pro-%E2%80%93-print-expo/epjlopeengigkpnddojdekfgpfpbidol" target="_blank" class="btn-primary" style="font-size:16px;padding:15px 32px;">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/>
+          <line x1="21.17" y1="8" x2="12" y2="8"/><line x1="3.95" y1="6.06" x2="8.54" y2="14"/>
+          <line x1="10.88" y1="21.94" x2="15.46" y2="14"/>
+        </svg>
+        Add to Chrome — It's Free
+      </a>
+      <a href="https://github.com/Devrelix/GPTPrint-Pro" target="_blank" class="btn-ghost">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
+        </svg>
+        View on GitHub
+      </a>
+    </div>
+    <div class="cta-note">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Verified · Safe · No data collection · Works on chatgpt.com
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════ FOOTER ═══════════════════════ -->
+<footer id="contact">
+  <div class="footer-inner">
+    <div class="footer-grid">
+      <div>
+        <a href="#" class="footer-logo">
+          <img src="./assets/main_logo.png" alt="Devrelix"/>
+          <span class="footer-logo-text">Devrelix</span>
+        </a>
+        <p class="footer-tagline">Building free tools with the help of AI.</p>
+        <div class="footer-socials">
+          <a href="https://www.linkedin.com/company/devrelix" target="_blank" class="soc-btn" title="LinkedIn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+          </a>
+          <a href="https://x.com/devrelix_" target="_blank" class="soc-btn" title="X">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          </a>
+          <a href="https://www.instagram.com/devrelix/" target="_blank" class="soc-btn" title="Instagram">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+          </a>
+          <a href="https://github.com/Devrelix" target="_blank" class="soc-btn" title="GitHub">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <div>
+        <div class="footer-col-head">Product</div>
+        <ul class="footer-links">
+          <li><a href="#features">Features</a></li>
+     
+          <li><a href="#how-it-works">How It Works</a></li>
+          <li><a href="https://chromewebstore.google.com/detail/gptprint-pro-%E2%80%93-print-expo/epjlopeengigkpnddojdekfgpfpbidol" target="_blank">Chrome Web Store</a></li>
+        </ul>
+      </div>
+
+
+      <div>
+        <div class="footer-col-head">Support</div>
+        <ul class="footer-links">
+          <li><a href="https://forms.gle/k4yLqTe2Za1VXWUP9" target="_blank">Send Feedback</a></li>
+          <li><a href="https://github.com/Devrelix" target="_blank">Report Issue</a></li>
+          <li><a href="https://www.linkedin.com/company/devrelix" target="_blank">Contact Devrelix</a></li>
+          <li><a href="https://devrelix.github.io/gptprint-pro/">Privacy Policy</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div class="footer-copy">© 2026 <a href="https://www.linkedin.com/company/devrelix" target="_blank">Devrelix</a>. Built with care. All rights reserved.</div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  /* ── Theme toggle ── */
+  const html = document.documentElement;
+  const btn  = document.getElementById('themeToggle');
+
+  // Persist preference
+  const saved = localStorage.getItem('gpp-theme');
+  if (saved) html.setAttribute('data-theme', saved);
+
+  btn.addEventListener('click', () => {
+    const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('gpp-theme', next);
+  });
+
+  /* ── Scroll reveal ── */
+  const reveals = document.querySelectorAll('.reveal');
+  const ro = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('visible'); ro.unobserve(e.target); }
+    });
+  }, { threshold: 0.1 });
+  reveals.forEach(el => ro.observe(el));
+
+  // Hero items immediately visible
+  document.querySelectorAll('.hero .reveal').forEach(el =>
+    setTimeout(() => el.classList.add('visible'), 120)
+  );
+
+  /* ── Nav compact on scroll ── */
+  const nav = document.getElementById('navbar');
+  window.addEventListener('scroll', () => {
+    nav.style.height = window.scrollY > 40 ? '56px' : '68px';
+  }, { passive: true });
+
+  /* ── Smooth anchor scroll ── */
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      const id = a.getAttribute('href');
+      if (id === '#') return;
+      const target = document.querySelector(id);
+      if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    });
+  });
+</script>
+</body>
+</html>
